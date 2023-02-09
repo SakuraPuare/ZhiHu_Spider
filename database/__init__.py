@@ -27,6 +27,49 @@ class Tables:
     def value(self, data: Any, with_bracket: bool = True) -> str:
         return '()'
         pass
+
+
+class TopicIntro(Tables):
+    name = 'topic_intro'
+    keys = ['name', 'introduction', 'question_count', 'follow_count', 'topic_id', 'uid', 'best_answers_count',
+            'avatar_url']
+    types = [
+        ('id', 'int', 'auto_increment', 'PRIMARY KEY'),
+        ('name', 'varchar(64)', "comment '话题标题'"),
+        ('introduction', 'text', "comment '简介'"),
+        ('question_count', 'int', "comment '问题数量'"),
+        ('follow_count', 'int', "comment '关注数量'"),
+        ('topic_id', 'bigint', "comment '话题id'"),
+        ('uid', 'int', "comment '话题id'"),
+        ('best_answers_count', 'int'),
+        ('avatar_url', 'varchar(128)')
+    ]
+
+    description = '话题简介'
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
+        if isinstance(data, dict):
+            data = [data]
+        result = []
+        for i in data:
+            name = i.get('name', '')
+            introduction = html.escape(i.get('introduction', ''))
+            question_count = i.get('question_count', 0)
+            follow_count = i.get('follow_count', 0)
+            topic_id = i.get('topic_id', 0)
+            uid = i.get('id', 0)
+            best_answers_count = i.get('best_answers_count', 0)
+            avatar_url = i.get('avatar_url', '')
+            result.append(
+                (name, introduction, question_count, follow_count, topic_id, uid, best_answers_count, avatar_url))
+
+        return f"""( {', '.join(f'"{i}"' for i in result[0])} )""" if len(result) == 1 else ', \n'.join(
+            f"""( {', '.join(f'"{i}"' for i in result[0])} )""")
+
 class SQL:
     def __init__(self, host: str = config.host, user: str = config.username, password: str = config.password,
                  dbname: str = config.dbname, charset: str = 'utf8mb4') -> None:

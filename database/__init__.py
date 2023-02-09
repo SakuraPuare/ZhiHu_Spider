@@ -70,6 +70,44 @@ class TopicIntro(Tables):
         return f"""( {', '.join(f'"{i}"' for i in result[0])} )""" if len(result) == 1 else ', \n'.join(
             f"""( {', '.join(f'"{i}"' for i in result[0])} )""")
 
+
+class User(Tables):
+    name = 'user'
+    keys = ['name', 'uid', 'gender', 'user_type', 'url', 'badge']
+    types = [
+        ('id', 'int', 'auto_increment', 'primary key'),
+        ('name', 'varchar(32)', "comment '昵称'"),
+        ('uid', 'varchar(64)', "comment '用户id'"),
+        ('gender', 'smallint', "comment '性别'"),
+        ('user_type', 'varchar(32)', "comment '用户类型'"),
+        ('url', 'text', "comment '用户url'"),
+        ('badge', 'varchar(32)', "comment '头衔'")
+    ]
+
+    description = '用户信息'
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
+        if isinstance(data, dict):
+            data = [data]
+        result = []
+        for i in data:
+            author = i.get('author', {})
+            name = author.get('name', '')
+            uid = author.get('id', '')
+            gender = author.get('gender', -1)
+            user_type = author.get('user_type', '')
+            url = author.get('url', '')
+            badge = author.get('badge_v2', '').get('title', '')
+            result.append((name, uid, gender, user_type, url, badge))
+
+        return f"""( {', '.join(f'"{i}"' for i in result[0])} )""" if len(result) == 1 else ', \n'.join(
+            f"""( {', '.join(f'"{i}"' for i in result[0])} )""")
+
+
 class SQL:
     def __init__(self, host: str = config.host, user: str = config.username, password: str = config.password,
                  dbname: str = config.dbname, charset: str = 'utf8mb4') -> None:

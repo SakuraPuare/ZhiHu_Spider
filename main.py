@@ -2,9 +2,13 @@ import asyncio
 import json
 import pathlib
 import time
+
+import httpx
 from selenium import webdriver
 cookies_path = pathlib.Path('cookies.json')
 driver = webdriver.Chrome()
+
+
 def read_cookies(path: pathlib.Path = 'cookies.json') -> dict:
     with open(cookies_path, 'r') as f:
         cookies = json.load(f)
@@ -15,6 +19,26 @@ def save_cookies(path: pathlib.Path = 'cookies.json') -> None:
     cookies = driver.get_cookies()
     with open(cookies_path, 'w') as f:
         json.dump(cookies, f, ensure_ascii=False)
+
+
+def get_cookies() -> httpx.Cookies:
+    httpx_cookies = httpx.Cookies()
+    cookies = driver.get_cookies()
+    for cookie in cookies:
+        httpx_cookies.set(cookie.get('name'), cookie.get('value'), domain=cookie.get('domain'))
+    return httpx_cookies
+
+
+async def get(msg: str, kwarg: Union[dict, str] = '') -> dict:
+    async with httpx.AsyncClient(cookies=get_cookies()) as client:
+        url = f'https://www.zhihu.com/api/v4/' + msg + kwarg
+        request = await client.get(url=url, follow_redirects=True, **kwargs)
+        assert request.status_code == 200
+        return request.json()
+
+
+
+
 async def main():
     pass
 

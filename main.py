@@ -5,7 +5,14 @@ import time
 
 import httpx
 from selenium import webdriver
+
+from database import SQL
+
 cookies_path = pathlib.Path('cookies.json')
+
+topic_id = 25850855
+
+sql = SQL()
 driver = webdriver.Chrome()
 
 
@@ -37,9 +44,15 @@ async def get(msg: str, kwarg: Union[dict, str] = '') -> dict:
         return request.json()
 
 
+async def get_topic(ids: int, types: str = '') -> dict:
+    msg = f'topics/{ids}' + types
+    return await get(msg)
 
 
 async def main():
+    # response = await get_topic(topic_id)
+    # sql.insert_into('topic_intro', TopicIntro, response)
+
     pass
 
 

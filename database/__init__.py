@@ -108,6 +108,34 @@ class User(Tables):
             f"""( {', '.join(f'"{i}"' for i in result[0])} )""")
 
 
+class Answer(Tables):
+    name = 'answer'
+    keys = ['uid', 'question_id', 'author_id', 'created_time', 'updated_time', 'content', 'voteup_count',
+            'favlists_count', 'comment_count', 'url', 'is_labeled']
+    types = [
+        ('id', 'int', 'auto_increment', 'primary key'),
+        ('uid', 'int', "comment 回答uid'"),
+        ('question_id', 'int', "comment '问题uid'"),
+        ('author_id', 'varchar(64)', "comment 回答作者uid'"),
+        ('created_time', 'timestamp', "comment 回答创建时间'"),
+        ('updated_time', 'timestamp', "comment 修改时间'"),
+        ('content', 'text', "comment 内容'"),
+        ('voteup_count', 'int', "comment 赞同数量'"),
+        ('favlists_count', 'int', "comment 收藏数量'"),
+        ('comment_count', 'int', "comment 评论数量'"),
+        ('url', 'varchar(256)', "comment 回答链接'"),
+        ('is_labeled', 'bool')
+    ]
+
+    description = '回答信息'
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
+        pass
+
 class SQL:
     def __init__(self, host: str = config.host, user: str = config.username, password: str = config.password,
                  dbname: str = config.dbname, charset: str = 'utf8mb4') -> None:

@@ -136,6 +136,34 @@ class Answer(Tables):
     def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
         pass
 
+
+class Article(Tables):
+    name = 'article'
+    keys = ['uid', 'updated', 'is_labeled', 'voteup_count', 'author_id', 'url', 'created', 'comment_count', 'title',
+            'content', 'favlists_count']
+    types = [
+        ('id', 'int', 'auto_increment', 'primary key'),
+        ('uid', 'int', "comment '文章id'"),
+        ('updated', 'timestamp', "comment '更新时间'"),
+        ('is_labeled', 'bool',),
+        ('voteup_count', 'int', "comment '赞同数量'"),
+        ('author_id', 'varchar(64)', "comment '作者id'"),
+        ('url', 'varchar(256)', "comment '文章链接'"),
+        ('created', 'timestamp', "comment '创建时间'"),
+        ('comment_count', 'int', "comment '评论数量'"),
+        ('title', 'varchar(256)', "comment '文章标题'"),
+        ('content', 'text', "comment '文章正文'"),
+        ('favlists_count', 'int', "comment '收藏数量'")
+    ]
+
+    description = '文章信息'
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
+        pass
 class SQL:
     def __init__(self, host: str = config.host, user: str = config.username, password: str = config.password,
                  dbname: str = config.dbname, charset: str = 'utf8mb4') -> None:

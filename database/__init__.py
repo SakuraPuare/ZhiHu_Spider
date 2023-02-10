@@ -164,6 +164,31 @@ class Article(Tables):
     @staticmethod
     def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
         pass
+
+
+class Question(Tables):
+    name = 'question'
+    keys = ['uid', 'author_id', 'title', 'created_time', 'updated_time', 'question_type']
+    types = [
+        ('id', 'int', 'auto_increment', 'primary key'),
+        ('uid', 'int', "comment '问题id'"),
+        ('author_id', 'varchar(64)', "comment '提问者id'"),
+        ('title', 'varchar(512)', "comment '问题标题'"),
+        ('created_time', 'timestamp', "comment '创建时间'"),
+        ('updated_time', 'timestamp', "comment '更新时间'"),
+        ('question_type', 'varchar(32)', "comment '问题类型'")
+    ]
+
+    description = '问题信息'
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def value(data: Union[dict, list], with_bracket: bool = True, **kwargs) -> str:
+        pass
+
+
 class SQL:
     def __init__(self, host: str = config.host, user: str = config.username, password: str = config.password,
                  dbname: str = config.dbname, charset: str = 'utf8mb4') -> None:

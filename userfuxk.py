@@ -2,7 +2,7 @@ from database import SQL
 
 sql = SQL()
 
-sql._execute('select * from user order by id')
+sql.execute('select * from user order by id')
 data = sql.cursor.fetchall()
 
 normal_list = []
@@ -15,6 +15,6 @@ for i in data:
         normal_list.append(i)
 
 for i in error_list:
-    sql._execute(f'update user set uid = "{i[2]}", name = "{i[1]}" where id = {i[0]}')
+    sql.execute(f'update user set uid = "{i[2]}", name = "{i[1]}" where id = {i[0]}')
 
 pass

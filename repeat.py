@@ -2,12 +2,11 @@ from database import *
 
 sql = SQL()
 
-table_list = [Answer, User, Comment, Question, Topic, User, Article ]
+table_list = [Answer, User, Comment, Article, Question, ]
 
 for table in table_list:
     table = table()
-    sql._execute('select * from %s' % table.name)
-    data = [row[:2] for row in sql.cursor.fetchall()]
+    data = sql.fetchall('select * from %s' % table.name)[:2]
     after = dict()
     remove_list = []
     for i in data:
@@ -16,4 +15,4 @@ for table in table_list:
         else:
             after[i[1]] = i[0]
     if remove_list:
-        sql._execute('delete from %s where id in (%s)' % (table.name, ','.join([str(i) for i in remove_list])))
+        sql.execute('delete from %s where id in (%s)' % (table.name, ','.join([str(i) for i in remove_list])))

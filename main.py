@@ -119,8 +119,8 @@ def main():
     # [topic(i) for i in tqdm.tqdm(topic_list)]
 
     # 从html中进行搜索
-    # with open('a.html', 'r', encoding='utf-8') as f:
-    #     serch(f.read())
+    with open('a.html', 'r', encoding='utf-8') as f:
+        serch(f.read())
 
     # 获取问题所有回答
     # question_list = sql.fetchall(f'select * from question')
@@ -229,8 +229,8 @@ def main():
 
 if __name__ == '__main__':
     # 设置cookies
-    get_cookies()
-    # 建立sql连接
-    sql = SQL()
+    # get_cookies()
+    # # 建立sql连接
+    # sql = SQL()
     # 运行
     main()

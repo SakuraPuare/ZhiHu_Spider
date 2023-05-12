@@ -1,0 +1,5 @@
+httpx
+selenium
+tqdm
+sqlalchemy
+bs4

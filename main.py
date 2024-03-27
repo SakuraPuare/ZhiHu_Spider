@@ -1,58 +1,39 @@
-import json
-import pathlib
+import asyncio
 
-import httpx
-from selenium import webdriver
 from sqlalchemy import distinct
 from tqdm import tqdm
 
 from connection import API
 from database import *
+from utils import load_all_cookies, save_cookies
 
-httpx_cookies = httpx.Cookies()
-cookies_path = pathlib.Path('cookies.json')
 api = API()
 
 
-def get_cookies() -> None:
-    global httpx_cookies
-    if cookies_path.exists():
-        with open(cookies_path, 'r') as f:
-            cookies = json.load(f)
-    else:
-        driver = webdriver.Chrome()
-        driver.get('https://www.zhihu.com/signin?next=%2F')
-        while True:
-            if driver.current_url == 'https://www.zhihu.com/':
-                break
-        cookies = driver.get_cookies()
-        with open(cookies_path, 'w') as f:
-            json.dump(cookies, f, ensure_ascii=False)
-    for cookie in cookies:
-        httpx_cookies.set(cookie.get('name'), cookie.get('value'), domain=cookie.get('domain'))
-
-
-def get_topic(topic_id: int) -> None:
-    info = api.get_topic(topic_id, '', httpx_cookies, arg={'include': 'created,updated'}, types='v4').json()
+async def get_topic(topic_id: int) -> None:
+    info = (
+        await api.get_topic(topic_id, '', arg={'include': 'created,updated'}, types='v5')).json()
     db.inserts(zhihu_topic.load(info))
 
-    num = api.get_topic(topic_id, '/feeds/essence', httpx_cookies, arg={'limit': 1}).json().get('paging', {}).get(
+    num = (await api.get_topic(topic_id, '/feeds/essence', arg={'limit': 1})).json().get('paging',
+                                                                                         {}).get(
         'totals', 0)
     for i in range(0, num, 20):
-        data = api.get_topic(topic_id, '/feeds/essence', httpx_cookies, {'limit': 20, 'offset': i}, types='v4').json()
+        data = (await api.get_topic(topic_id, '/feeds/essence', {'limit': 20, 'offset': i},
+                                    types='v5')).json()
         if not data.get('data', None):
             break
         data = data.get('data')
         answer_list = []
         article_list = []
         user_list = []
-        quesiton_list = []
+        question_list = []
         for j in data:
             target = j.get('target')
             user_list.append(target.get('author'))
             types = target.get('type')
             if types == 'answer':
-                quesiton_list.append(target.get('question'))
+                question_list.append(target.get('question'))
                 answer_list.append(target)
             elif types == 'article':
                 article_list.append(target)
@@ -63,19 +44,18 @@ def get_topic(topic_id: int) -> None:
             db.inserts([zhihu_article.load(i) for i in article_list])
         if user_list:
             db.inserts([zhihu_user.load(i) for i in user_list])
-        if quesiton_list:
-            db.inserts([zhihu_question.load(i) for i in quesiton_list])
+        if question_list:
+            db.inserts([zhihu_question.load(i) for i in question_list])
 
 
-def get_question_answer(question_id: int) -> None:
-    num = api.get_question(question_id, '/answers', httpx_cookies, arg={'limit': 1}).json().get('paging', {}).get(
+async def get_question_answer(question_id: int) -> None:
+    num = (await api.get_question(question_id, '/answers', arg={'limit': 1})).json().get('paging',
+                                                                                         {}).get(
         'totals', 0)
     for j in range(0, num, 20):
-        arg = {'limit': 20,
-               'offset': j,
-               'include': 'content,voteup_count,favlists_count,comment_count,is_labeled'
-               }
-        data = api.get_question(question_id, '/answers', httpx_cookies, arg=arg).json()
+        arg = {'limit': 20, 'offset': j,
+               'include': 'content,voteup_count,favlists_count,comment_count,is_labeled'}
+        data = (await api.get_question(question_id, '/answers', arg=arg)).json()
         if not data.get('data', None):
             break
         data = data.get('data')
@@ -91,12 +71,13 @@ def get_question_answer(question_id: int) -> None:
             db.inserts([zhihu_user.load(i) for i in user_list])
 
 
-def get_answer_comment(answer_id: int) -> None:
-    num = api.get_answer(answer_id, '/comments', httpx_cookies, arg={'limit': 1}).json().get('paging', {}).get(
+async def get_answer_comment(answer_id: int) -> None:
+    num = (await api.get_answer(answer_id, '/comments', arg={'limit': 1})).json().get('paging',
+                                                                                      {}).get(
         'totals', 0)
     for j in range(0, num, 20):
         arg = {'limit': 20, 'offset': j}
-        data = api.get_answer(answer_id, '/comments', httpx_cookies, arg=arg).json()
+        data = (await api.get_answer(answer_id, '/comments', arg=arg)).json()
         if not data.get('data', None):
             break
         data = data.get('data')
@@ -112,13 +93,12 @@ def get_answer_comment(answer_id: int) -> None:
             db.inserts([zhihu_user.load(i) for i in user_list])
 
 
-def get_question_comment(question_id: int) -> None:
-    num = api.get_question(question_id, '/comments', httpx_cookies, arg={'limit': 1}).json().get('paging', {}).get(
-        'totals',
-        0)
+async def get_question_comment(question_id: int) -> None:
+    num = (await api.get_question(question_id, '/comments', arg={'limit': 1})).json().get(
+        'paging', {}).get('totals', 0)
     for j in range(0, num, 20):
         arg = {'limit': 20, 'offset': j}
-        data = api.get_question(question_id, '/comments', httpx_cookies, arg=arg).json()
+        data = (await api.get_question(question_id, '/comments', arg=arg)).json()
         if not data.get('data', None):
             break
         data = data.get('data')
@@ -134,12 +114,13 @@ def get_question_comment(question_id: int) -> None:
             db.inserts([zhihu_user.load(i) for i in user_list])
 
 
-def get_article_comment(article_id: int) -> None:
-    num = api.get_article(article_id, '/comments', httpx_cookies, arg={'limit': 1}).json().get('paging', {}).get(
+async def get_article_comment(article_id: int) -> None:
+    num = (await api.get_article(article_id, '/comments', arg={'limit': 1})).json().get('paging',
+                                                                                        {}).get(
         'totals', 0)
     for j in range(0, num, 20):
         arg = {'limit': 20, 'offset': j}
-        data = api.get_article(article_id, '/comments', httpx_cookies, arg=arg).json()
+        data = (await api.get_article(article_id, '/comments', arg=arg)).json()
         if not data.get('data', None):
             break
         data = data.get('data')
@@ -155,57 +136,67 @@ def get_article_comment(article_id: int) -> None:
             db.inserts([zhihu_user.load(i) for i in user_list])
 
 
-def get_all_topic() -> None:
-    topic_list = []
-    bar = tqdm(topic_list)
-    for topic in bar:
-        get_topic(topic)
+async def get_all_topic() -> None:
+    topic_list = [23507285, 26640843, 27795532, 20205523, 25671250, 23560902, 21763228]
+    # topic_list = [23507285]
+    tasks = [asyncio.create_task(get_topic(i)) for i in topic_list]
+    for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc='Topic'):
+        await task
 
 
-def get_all_question_answer() -> None:
-    question_list = [i[0] for i in db.session.query(distinct(zhihu_question.uid)).all()]
-    bar = tqdm(question_list)
-    for question in bar:
-        bar.set_description(f'{question}')
-        get_question_answer(question)
+async def get_all_question_answer() -> None:
+    question_list = [i[0] for i in db.session.query(
+        distinct(zhihu_question.uid)).all()]
+    tasks = [asyncio.create_task(get_question_answer(i))
+             for i in question_list]
+    for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc='Question Answer'):
+        # await task
+        asyncio.run(task)
+
+async def get_all_answer_comment() -> None:
+    answer_list = [i[0]
+                   for i in db.session.query(distinct(zhihu_answer.uid)).all()]
+    tasks = [asyncio.create_task(get_answer_comment(i)) for i in answer_list]
+    for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc='Answer Comment'):
+        # await task
+        asyncio.run(task)
 
 
-def get_all_answer_comment() -> None:
-    answer_list = [i[0] for i in db.session.query(distinct(zhihu_answer.uid)).all()]
-    bar = tqdm(answer_list)
-    for answer in bar:
-        bar.set_description(f'{answer}')
-        get_answer_comment(answer)
+async def get_all_question_comment() -> None:
+    question_list = [i[0] for i in db.session.query(
+        distinct(zhihu_question.uid)).all()]
+    tasks = [asyncio.create_task(get_question_comment(i))
+             for i in question_list]
+    for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc='Question Comment'):
+        # await task
+        asyncio.run(task)
 
 
-def get_all_question_comment() -> None:
-    question_list = [i[0] for i in db.session.query(distinct(zhihu_question.uid)).all()]
-    bar = tqdm(question_list)
-    for question in bar:
-        bar.set_description(f'{question}')
-        get_question_comment(question)
-
-
-def get_all_article_comment() -> None:
-    article_list = [i[0] for i in db.session.query(distinct(zhihu_article.uid)).all()]
-    bar = tqdm(article_list)
-    for article in bar:
-        bar.set_description(f'{article}')
-        get_article_comment(article)
+async def get_all_article_comment() -> None:
+    article_list = [i[0]
+                    for i in db.session.query(distinct(zhihu_article.uid)).all()]
+    tasks = [asyncio.create_task(get_article_comment(i)) for i in article_list]
+    for task in tqdm(asyncio.as_completed(tasks), total=len(tasks), desc='Article Comment'):
+        # await task
+        asyncio.run(task)
 
 
 def main():
-    get_all_topic()
-    get_all_question_answer()
-    get_all_answer_comment()
-    get_all_question_comment()
-    get_all_article_comment()
+    asyncio.run(get_all_topic())
+    asyncio.run(get_all_question_answer())
+    asyncio.run(get_all_article_comment())
+    asyncio.run(get_all_question_comment())
+    asyncio.run(get_all_answer_comment())
 
 
 if __name__ == '__main__':
-    get_cookies()
-
-    db = Database('mysql+pymysql://root:20131114@localhost:3306/env?charset=utf8mb4')
+    # save_cookies()
+    # exit(0)
+    load_all_cookies()
+    db = Database(
+        'mysql+pymysql://root:20131114@localhost:3306/zhihu?charset=utf8mb4')
+    # drop all table
+    # Base.metadata.drop_all(db.engine)
     db.create_all_table()
 
     main()

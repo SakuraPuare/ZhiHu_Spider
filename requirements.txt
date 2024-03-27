@@ -3,3 +3,4 @@ selenium
 tqdm
 sqlalchemy
 bs4
+pymysql
